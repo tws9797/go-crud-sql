@@ -1,4 +1,4 @@
-module crud-sql
+module go-crud-sql
 
 go 1.18
 
