@@ -158,10 +158,84 @@ func Create(w http.ResponseWriter, r *http.Request) {
 
 func Update(w http.ResponseWriter, r *http.Request) {
 
+	if r.Method == "PUT" {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "PUT")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+
+		var alb Album
+		var err error
+
+		if err = json.NewDecoder(r.Body).Decode(&alb); err != nil {
+			http.Error(w, "Error decoding request body", http.StatusInternalServerError)
+			log.Fatal(err)
+		}
+
+		db := dbConn()
+		defer func(db *sql.DB) {
+			err := db.Close()
+			if err != nil {
+				log.Fatal(err)
+			}
+		}(db)
+
+		_, err = db.Exec("UPDATE album SET title=?,artist=?,price=? WHERE id=?", alb.Title, alb.Artist, alb.Price, alb.ID)
+		if err != nil {
+			log.Fatalf("Unable to execute the query. %v", err)
+		}
+
+		res := response {
+			ID: alb.ID,
+			Message: "User updated successfully",
+		}
+
+		if err = json.NewEncoder(w).Encode(res); err != nil {
+			http.Error(w, "Error encoding response object", http.StatusInternalServerError)
+			log.Fatal(err)
+		}
+	}
 }
 
 func Delete(w http.ResponseWriter, r *http.Request) {
-	
+
+	if r.Method == "DELETE" {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "DELETE")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+
+		var alb Album
+		var err error
+
+		if err = json.NewDecoder(r.Body).Decode(&alb); err != nil {
+			http.Error(w, "Error decoding request body", http.StatusInternalServerError)
+			log.Fatal(err)
+		}
+
+		db := dbConn()
+		defer func(db *sql.DB) {
+			err := db.Close()
+			if err != nil {
+				log.Fatal(err)
+			}
+		}(db)
+
+		_, err = db.Exec("DELETE FROM album WHERE id=?", alb.ID)
+		if err != nil {
+			log.Fatalf("Unable to execute the query. %v", err)
+		}
+
+		res := response {
+			ID: alb.ID,
+			Message: "User deleted successfully",
+		}
+
+		if err = json.NewEncoder(w).Encode(res); err != nil {
+			http.Error(w, "Error encoding response object", http.StatusInternalServerError)
+			log.Fatal(err)
+		}
+	}
 }
 
 func main() {
@@ -169,5 +243,7 @@ func main() {
 	http.HandleFunc("/", Index)
 	http.HandleFunc("/create", Create)
 	http.HandleFunc("/read", Read)
+	http.HandleFunc("/update", Update)
+	http.HandleFunc("/delete", Delete)
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
